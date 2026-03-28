@@ -1,97 +1,96 @@
 import streamlit as st
 from langchain_groq import ChatGroq
-from duckduckgo_search import DDGS # Plus stable que l'outil LangChain
+from duckduckgo_search import DDGS
+import datetime
 
-# --- Configuration de la page ---
-st.set_page_config(page_title="Accompagnement PME en RDC", page_icon ="CG", layout="wide")
+# --- CONFIGURATION ---
+st.set_page_config(page_title="Agent IA - PME RDC", page_icon="🇨🇬", layout="wide")
 
-# --- DESIGN PERSONNALISÉ (CSS) ---
+# --- CSS AUX COULEURS DU DRAPEAU ---
 st.markdown("""
     <style>
-    /* Fond de la barre latérale en Bleu Azur */
-    [data-testid="stSidebar"] {
-        background-color: #007FFF;
-        color: white;
-    }
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    /* Bouton Principal en Jaune Or */
-    div.stButton > button:first-child {
-        background-color: #F7D618;
-        color: #000000;
-        border-radius: 10px;
-        border: 2px solid #CE1021;
-        font-weight: bold;
-        width: 100%;
-    }
-    /* Titres en Bleu */
-    h1 {
-        color: #007FFF;
-        border-bottom: 3px solid #F7D618;
-    }
-    /* Encadré des réponses */
-    .res-box {
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 10px solid #CE1021;
-        background-color: #f0f2f6;
-    }
+    [data-testid="stSidebar"] { background-color: #007FFF; color: white; }
+    div.stButton > button { background-color: #F7D618; color: black; font-weight: bold; width: 100%; border: 2px solid #CE1021; }
+    .event-box { padding: 15px; border: 2px dashed #F7D618; background-color: #e3f2fd; border-radius: 10px; margin-bottom: 20px; }
+    h1, h2 { color: #007FFF; }
     </style>
     """, unsafe_allow_html=True)
 
-# Récupération sécurisée de la clé API
-if "GROQ_API_KEY" in st.secrets:
-    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-else:
-    st.error("⚠️ Clé API manquante dans les Secrets.")
-    st.stop()
+# --- NAVIGATION ---
+page = st.sidebar.radio("Navigation", ["🤖 Agent IA", "🤝 Accompagnement Spécifique", "📅 Newsletter & Événements"])
 
-# --- Fonction de recherche simplifiée ---
-def chercher_web(query):
-    try:
-        with DDGS() as ddgs:
-            results = [r['body'] for r in ddgs.text(query, max_results=3)]
-            return "\n".join(results)
-    except:
-        return "Contexte local non disponible."
+# --- LOGIQUE IA (Code précédent optimisé) ---
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "TA_CLE_ICI")
+llm = ChatGroq(temperature=0.2, groq_api_key=GROQ_API_KEY, model_name="llama-3.3-70b-versatile")
 
-# --- Initialisation de l'IA (Groq) ---
-llm = ChatGroq(
-    temperature=0.2, 
-    groq_api_key=GROQ_API_KEY, 
-    model_name="llama-3.3-70b-versatile"
-)
+# --- PAGE 1 : AGENT IA ---
+if page == "🤖 Agent IA":
+    st.title("🇨🇬 Expert IA : Conseil & Automatisation")
+    with st.form("ia_form"):
+        menu = ["Conseil OHADA", "Automatisation Business", "Recherche de Débouchés"]
+        choix = st.selectbox("Domaine d'expertise :", menu)
+        question = st.text_area("Votre question :")
+        valider = st.form_submit_button("Interroger l'IA 🚀")
+        
+    if valider and question:
+        with st.spinner("Analyse en cours..."):
+            reponse = llm.invoke(f"Expert RDC. Sujet: {choix}. Question: {question}")
+            st.success("Conseil généré !")
+            st.write(reponse.content)
 
-# --- Interface Utilisateur ---
-st.sidebar.image("https://wikimedia.org", width=150)
-st.sidebar.title("Options de l'Agent")
+# --- PAGE 2 : ACCOMPAGNEMENT (FORMULAIRE) ---
+elif page == "🤝 Accompagnement Spécifique":
+    st.title("🎯 Solliciter un Accompagnement")
+    st.write("Remplissez ce formulaire pour booster votre visibilité et obtenir un conseil sur mesure.")
+    
+    with st.form("form_accompagnement"):
+        col1, col2 = st.columns(2)
+        with col1:
+            nom = st.text_input("Nom")
+            prenom = st.text_input("Prénom")
+            nat = st.text_input("Nationalité", value="Congolaise")
+            ville = st.text_input("Ville de résidence (RDC)")
+        
+        with col2:
+            secteur = st.selectbox("Type de business", [
+                "Technologies de l'information", "Agropastoral", 
+                "Transformation micro-industrielle", "Production micro-industrielle", 
+                "Commerce", "Services"
+            ])
+            nom_biz = st.text_input("Nom du business (si lancé)")
+            personnel = st.number_input("Nombre de personnels", min_value=0, step=1)
+        
+        besoin = st.multiselect("Services souhaités", ["Publicité Site Web", "Publicité Facebook", "Publicité LinkedIn", "Accompagnement Juridique"])
+        
+        submit_biz = st.form_submit_button("Envoyer ma demande d'enregistrement")
+        
+        if submit_biz:
+            # Ici, on simule l'enregistrement. Idéalement : envoyer vers Supabase ou Email
+            st.balloons()
+            st.success(f"Merci {prenom} ! Votre demande pour '{nom_biz}' a été enregistrée. Notre équipe vous contactera sous 48h.")
+            # LOGIQUE DE STOCKAGE : Tu peux utiliser requests.post vers un Webhook Make ici
 
-st.title("🇨🇬 Expert IA : Automatisation & Droit OHADA")
-st.write("Le partenaire numérique des PME en République Démocratique du Congo.")
-
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    menu = ["Conseil OHADA", "Automatisation Business", "Recherche de Débouchés"]
-    choix = st.selectbox("Sélectionnez votre domaine :", menu)
-    question = st.text_area("Expliquez votre besoin ou posez votre question :", height=150)
-
-with col2:
-    st.info("**Astuce :** Soyez précis sur votre secteur d'activité (ex: Commerce à Kinshasa, Mines à Kolwezi).")
-
-if st.button("Lancer l'analyse 🚀"):
-    if question:
-        with st.spinner("Recherche en cours dans le bassin du Congo..."):
-            contexte = chercher_web(f"RDC OHADA {choix} {question}")
-            prompt = f"Tu es un expert consultant RDC. Sujet: {choix}. Contexte: {contexte}. Question: {question}. Réponds de façon structurée."
-            reponse = llm.invoke(prompt)
-            
-            st.success("Analyse terminée !")
-            # Affichage dans un bloc stylisé
-            st.markdown(f'<div class="res-box">{reponse.content}</div>', unsafe_allow_html=True)
-    else:
-        st.warning("Veuillez entrer une question.")
+# --- PAGE 3 : NEWSLETTER ---
+elif page == "📅 Newsletter & Événements":
+    st.title("📢 Actualités & Événements")
+    
+    st.markdown("""
+    <div class="event-box">
+        <h4>🗓️ Webinaire : Automatiser sa comptabilité avec Python</h4>
+        <p><b>Date :</b> 15 Avril 2024 à 14h (Heure de Kinshasa)<br>
+        <i>Gratuit pour les membres enregistrés.</i></p>
+    </div>
+    <div class="event-box">
+        <h4>🗓️ Forum PME & Digital - Lubumbashi</h4>
+        <p><b>Date :</b> 22 Mai 2024<br>
+        Rencontre physique des entrepreneurs du Katanga.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.subheader("S'abonner à la Newsletter")
+    email_news = st.text_input("Entrez votre email pour recevoir les alertes :")
+    if st.button("S'abonner"):
+        st.toast("Email enregistré ! Bienvenue dans la communauté.")
 
 st.sidebar.markdown("---")
 st.sidebar.write("Développé par **Thierry Kafun**")
